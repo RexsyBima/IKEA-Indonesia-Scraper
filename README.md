@@ -36,7 +36,7 @@ You will also need to have the [correct WebDriver for your browser](https://www.
 To run the script, navigate to the directory containing the project files and run:
 
 ```
-$ python scraper.py
+$ python main.py
 ```
 
 The script will then start collecting the data and save it into the specified files.
