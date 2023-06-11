@@ -1,7 +1,9 @@
 #please pip install -r requirements.txt to venv
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.edge.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 import csv
 import json
@@ -16,32 +18,33 @@ driver = webdriver.Edge('/usr/local/bin/msedgedriver') #locate the browser bot f
 driver.set_page_load_timeout(200)
 driver.implicitly_wait(120)
 
+driver.get("https://www.ikea.co.id/in/produk") #launch the browser bot to the url
+html_content = driver.page_source #get url html file
+with open('seleniumhome.html', 'w') as file:
+    """to write the html, BS, lxml it, then prettify it"""
+    soup = BeautifulSoup(html_content, 'lxml')
+    file.writelines(soup.prettify())
+with open('seleniumhome.html', 'r') as file:
+    """to read seleniumhome.html, BS, lxml it, then prettify it, again... and also to search keywords"""
+    content = file.read()
+    soup = BeautifulSoup(content, 'lxml')
+    divs = soup.find_all("div", {"class": "col-sm-6 col-md-3 col-lg-3 text-left"})
+    for div in divs:
+        # Get the h2 text for the key of the dictionary
+        key = div.find("h2").get_text(strip=True)
+        # Find all a tags within this div and create a dictionary with text as key and href as value
+        values = [{"name": a.get_text(strip=True), "url": "www.ikea.co.id" + a.get("href")} for a in div.find_all("a")]
+        # Append to the dictionary
+        dict_category[key] = values
+# Create a writer object
+with open('dictvalues.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(["Category", "Name", "URL"])
+    for category, subcategories in dict_category.items():
+        for subcategory in subcategories:
+            writer.writerow([category, subcategory['name'], subcategory['url']])
 
-#driver.get("https://www.ikea.co.id/in/produk") #launch the browser bot to the url
-#html_content = driver.page_source #get url html file
-#with open('seleniumhome.html', 'w') as file:
-#    """to write the html, BS, lxml it, then prettify it"""
-#    soup = BeautifulSoup(html_content, 'lxml')
-#    file.writelines(soup.prettify())
-#with open('seleniumhome.html', 'r') as file:
-#    """to read seleniumhome.html, BS, lxml it, then prettify it, again... and also to search keywords"""
-#    content = file.read()
-#    soup = BeautifulSoup(content, 'lxml')
-#    divs = soup.find_all("div", {"class": "col-sm-6 col-md-3 col-lg-3 text-left"})
-#    for div in divs:
-#        # Get the h2 text for the key of the dictionary
-#        key = div.find("h2").get_text(strip=True)
-#        # Find all a tags within this div and create a dictionary with text as key and href as value
-#        values = [{"name": a.get_text(strip=True), "url": "www.ikea.co.id" + a.get("href")} for a in div.find_all("a")]
-#        # Append to the dictionary
-#        dict_category[key] = values
-## Create a writer object
-#with open('dictvalues.csv', 'w', newline='') as file:
-#    writer = csv.writer(file)
-#    writer.writerow(["Category", "Name", "URL"])
-#    for category, subcategories in dict_category.items():
-#        for subcategory in subcategories:
-#            writer.writerow([category, subcategory['name'], subcategory['url']])
+WebDriverWait(driver, 30)
 
 with open('dictvalues.csv', 'r') as file:
     reader = csv.DictReader(file)
@@ -55,10 +58,13 @@ with open('dictvalues.csv', 'r') as file:
             html_content = driver.page_source
             soup = BeautifulSoup(html_content, 'lxml')
             test = soup.find_all('input', {'name' : 'productInfo'})
+            print(test)
+            if not test:
+                break
             page += 1
             with open('seleniumout.html', 'w') as file:
                 """to write the html, BS, lxml it, then prettify it"""
-#                soup = BeautifulSoup(html_content, 'lxml')
+                soup = BeautifulSoup(html_content, 'lxml')
                 file.writelines(soup.prettify())
             with open('seleniumout.html', 'r') as file:
                 """to read seleniumout.html, BS, lxml it, then prettify it, again... and also to search keywords"""
@@ -79,9 +85,7 @@ with open('dictvalues.csv', 'r') as file:
                     href = f"https://www.ikea.co.id{urlfix.get('href') if url else None}"
                     urllist.append(href)
                 for item, urlfix in zip(data, urllist):
-                    item['url'] = urllist
-            if not test:
-                break   
+                    item['url'] = urlfix   
 
 for data_ in data:
     name_parts = data_['name'].split(' - ')
